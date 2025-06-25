@@ -20,5 +20,8 @@ A private document Q&A app using Retrieval-Augmented Generation (RAG) and LLMs.
 ```bash
 git clone https://github.com/yourusername/askmydocs
 cd askmydocs
+python -m venv venv
+source venv/bin/activate 
 pip install -r requirements.txt
 cp .env.example .env
+
