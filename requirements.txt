@@ -6,3 +6,4 @@ openai              # If using OpenAI for embeddings or LLM
 streamlit           # Or fastapi, depending on your choice
 python-dotenv
 tqdm
+langchain-community

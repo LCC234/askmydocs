@@ -8,3 +8,8 @@ __pycache__/
 # virtual environment
 venv/
 .env/
+
+
+# docs
+data/uploaded_docs/
+data/vector_store/
