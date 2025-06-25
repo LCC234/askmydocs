@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+.env
+
+# virtual environment
+venv/
+.env/
