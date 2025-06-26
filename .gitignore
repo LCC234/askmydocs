@@ -10,6 +10,9 @@ venv/
 .env/
 
 
-# docs
-data/uploaded_docs/
-data/vector_store/
+# data files
+data/uploaded_docs/*
+data/vector_store/*
+
+# Allow .gitkeep files
+!.gitkeep
