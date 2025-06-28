@@ -1,13 +1,13 @@
-from langchain.vectorstores import Chroma
-from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from app.config import EMBEDDING_MODEL, VECTOR_STORE_DIR
 
-embedding_model = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
-vectorstore = Chroma(persist_directory=VECTOR_STORE_DIR, embedding_function=embedding_model)
+# embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+# vectorstore = Chroma(persist_directory=VECTOR_STORE_DIR, embedding_function=embedding_model)
 
 def get_vectorstore(persist_dir=VECTOR_STORE_DIR):
-    embedding_model = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
+    embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
     vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embedding_model)
     return vectorstore
 
