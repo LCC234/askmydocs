@@ -1,9 +1,5 @@
+fitz
 langchain
-chromadb
-pymupdf             # For PDF parsing
-sentence-transformers
-openai              # If using OpenAI for embeddings or LLM
-streamlit           # Or fastapi, depending on your choice
+langchain_community
+langchain_huggingface
 python-dotenv
-tqdm
-langchain-community
