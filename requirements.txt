@@ -1,5 +1,9 @@
-fitz
 langchain
 langchain_community
 langchain_huggingface
+langchain_openai
 python-dotenv
+pymupdf==1.22.5
+langchain-chroma
+sentence-transformers
+dotenv
