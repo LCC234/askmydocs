@@ -2,6 +2,10 @@
 
 A private document Q&A app using Retrieval-Augmented Generation (RAG) and LLMs.
 
+## Requirements
+- Python 3.11+
+
+
 ## 🔧 Features
 - Upload and index PDF documents
 - Ask questions and get context-aware answers
