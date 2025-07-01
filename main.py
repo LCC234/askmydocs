@@ -11,23 +11,6 @@ from app.embedder import get_vectorstore
 from app.retriever import get_relevant_docs
 from app.llm_chain import generate_prompt, ask_llm
 
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
-
-
-
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
-
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -53,29 +36,40 @@ def process_question(pdf_filename, question, llm_provider="openai"):
     if not os.path.exists(file_path):
         logger.error(f"File not found: {file_path}")
         raise FileNotFoundError(f"File not found: {file_path}")
-
-    logger.info("🔍 Extracting text from PDF...")
-    text = extract_text_from_pdf(file_path)
-    logger.info(f"Extracted {len(text)} characters from {pdf_filename}")
-    logger.info("Content preview:")
-    logger.info(text[:500] + "...")  # Preview first 500 characters
-
-    logger.info("✂️ Splitting text into chunks...")
-    chunks = chunk_text(text)
-    logger.info(f"Created {len(chunks)} chunks from the document.")
-    logger.info(f"First chunk preview start: {chunks[0][:100]}...")  # Preview first 100 characters of the first chunk
-    logger.info(f"First chunk preview end: {chunks[0][-100:]}...")  # Preview last 100 characters of the first chunk
-    logger.info(f"Last chunk preview start: {chunks[-1][:100]}...")  # Preview first 100 characters of the last chunk
-    logger.info(f"Last chunk preview end: {chunks[-1][-100:]}...")  # Preview last 100 characters of the last chunk
-
+    
     logger.info("📚 Initializing vector store...")
     vectorstore = get_vectorstore(logger=logger)
     logger.info(f"Vector store initialized at {VECTOR_DIR} with {vectorstore} existing documents.")
     
+    #Check if the file has already been indexed with the same name
+    existing_docs = vectorstore.get()['metadatas']
+    if any(doc['source'] == pdf_filename for doc in existing_docs):
+        logger.info(f"Document '{pdf_filename}' already indexed. Skipping re-indexing.")
+        return "Document already indexed. No need to reprocess."
+    
+    else:
+        
 
-    logger.info("📥 Indexing document chunks in vector store...")
-    index_document(vectorstore, chunks, metadata=pdf_filename)
-    logger.info(f"Vector store metadata: {vectorstore.get()['metadatas']}")
+        logger.info("🔍 Extracting text from PDF...")
+        text = extract_text_from_pdf(file_path)
+        logger.info(f"Extracted {len(text)} characters from {pdf_filename}")
+        logger.info("Content preview:")
+        logger.info(text[:500] + "...")  # Preview first 500 characters
+
+        logger.info("✂️ Splitting text into chunks...")
+        chunks = chunk_text(text)
+        logger.info(f"Created {len(chunks)} chunks from the document.")
+        logger.info(f"First chunk preview start: {chunks[0][:100]}...")  # Preview first 100 characters of the first chunk
+        logger.info(f"First chunk preview end: {chunks[0][-100:]}...")  # Preview last 100 characters of the first chunk
+        logger.info(f"Last chunk preview start: {chunks[-1][:100]}...")  # Preview first 100 characters of the last chunk
+        logger.info(f"Last chunk preview end: {chunks[-1][-100:]}...")  # Preview last 100 characters of the last chunk
+
+        
+        
+
+        logger.info("📥 Indexing document chunks in vector store...")
+        index_document(vectorstore, chunks, metadata=pdf_filename)
+        logger.info(f"Vector store metadata: {vectorstore.get()['metadatas']}")
     
     logger.info("📡 Retrieving relevant documents...")
     context_docs = get_relevant_docs(vectorstore, question)
