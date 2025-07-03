@@ -2,87 +2,29 @@
 
 import os
 import logging
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
 
-from app.config import BASE_DIR, DATA_DIR, VECTOR_DIR
-from app.document_loader import extract_text_from_pdf
-from app.embedder import get_vectorstore
+
+from app.config import DATA_DIR
+from app.embedder import embed_file, get_vectorstore
 from app.retriever import get_relevant_docs
-from app.llm_chain import generate_prompt, ask_llm
+from app.llm_chain import generate_prompt
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
-# check sqlite3 version
-import sqlite3
-logger.info(f"SQLite version: {sqlite3.sqlite_version}")
 
-
-def chunk_text(text, chunk_size=1000, chunk_overlap=200):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    chunks = splitter.split_text(text)
-    return chunks
-
-
-def index_document(vectorstore :  Chroma, chunks, metadata):
-    # Add texts to vectorstore with metadata for traceability
-    metadatas = [{"source": metadata} for _ in chunks]
-    vectorstore.add_texts(texts=chunks, metadatas=metadatas)
-
-
-def process_question(pdf_filename, question, llm_provider="openai"):
-    file_path = os.path.join(DATA_DIR, pdf_filename)
-    if not os.path.exists(file_path):
-        logger.error(f"File not found: {file_path}")
-        raise FileNotFoundError(f"File not found: {file_path}")
+def process_question(pdf_filenames: list[str], question :str):
     
-    logger.info("📚 Initializing vector store...")
-    vectorstore = get_vectorstore(logger=logger)
-    logger.info(f"Vector store initialized at {VECTOR_DIR} with {vectorstore} existing documents.")
-    
-    #Check if the file has already been indexed with the same name
-    existing_docs = vectorstore.get()['metadatas']
-    if any(doc['source'] == pdf_filename for doc in existing_docs):
-        logger.info(f"Document '{pdf_filename}' already indexed. Skipping re-indexing.")
-        return "Document already indexed. No need to reprocess."
-    
-    else:
+    if pdf_filenames:    
+        vectorstore = get_vectorstore(logger=logger)
+        embed_file(pdf_filenames, vectorstore=vectorstore)
+        context_docs = get_relevant_docs(vectorstore, question)
         
-
-        logger.info("🔍 Extracting text from PDF...")
-        text = extract_text_from_pdf(file_path)
-        logger.info(f"Extracted {len(text)} characters from {pdf_filename}")
-        logger.info("Content preview:")
-        logger.info(text[:500] + "...")  # Preview first 500 characters
-
-        logger.info("✂️ Splitting text into chunks...")
-        chunks = chunk_text(text)
-        logger.info(f"Created {len(chunks)} chunks from the document.")
-        logger.info(f"First chunk preview start: {chunks[0][:100]}...")  # Preview first 100 characters of the first chunk
-        logger.info(f"First chunk preview end: {chunks[0][-100:]}...")  # Preview last 100 characters of the first chunk
-        logger.info(f"Last chunk preview start: {chunks[-1][:100]}...")  # Preview first 100 characters of the last chunk
-        logger.info(f"Last chunk preview end: {chunks[-1][-100:]}...")  # Preview last 100 characters of the last chunk
-
-        
-        
-
-        logger.info("📥 Indexing document chunks in vector store...")
-        index_document(vectorstore, chunks, metadata=pdf_filename)
-        logger.info(f"Vector store metadata: {vectorstore.get()['metadatas']}")
-    
-    logger.info("📡 Retrieving relevant documents...")
-    context_docs = get_relevant_docs(vectorstore, question)
-    logger.info(f"Retrieved {len(context_docs)} relevant documents for the question.")
-    logger.info("Context documents preview:")
-    for i, doc in enumerate(context_docs):
-        logger.info(f"Document {i+1} preview: {doc.page_content[:50]}...")
     
 
-    logger.info("📝 Building prompt...")
     prompt = generate_prompt(context_docs, question)
     logger.info("Prompt ready for LLM query:")
-    logger.info(prompt)
+    logger.info(prompt) 
     
 
     # logger.info(f"🤖 Querying LLM provider: {llm_provider}...")
@@ -93,15 +35,13 @@ def process_question(pdf_filename, question, llm_provider="openai"):
 
 if __name__ == "__main__":
     print("=== AskMyDocs ===")
-    pdf = input("Enter PDF file name (in data/uploaded_docs): ").strip()
     question = input("What would you like to know? ").strip()
 
-
-    if not pdf.endswith('.pdf'):
-        pdf += '.pdf'
+    pdf_files = [f for f in os.listdir(DATA_DIR) if f.endswith('.pdf')]
+    logger.info(f"PDF files found: {pdf_files}")
 
     try:
-        answer = process_question(pdf, question)
+        answer = process_question(pdf_files, question)
         print("\n🧠 Answer:")
         print(answer)
     except Exception as e:
